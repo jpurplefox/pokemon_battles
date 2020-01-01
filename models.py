@@ -14,10 +14,37 @@ class Species:
     speed: int
 
 
+known_species = {
+    'squirtle': Species(
+        'Squirtle',
+        hp=44,
+        attack=48,
+        defense=65,
+        sp_attack=50,
+        sp_defense=64,
+        speed=43,
+    ),
+    'pikachu': Species(
+        'Pikachu',
+        hp=35,
+        attack=55,
+        defense=30,
+        sp_attack=50,
+        sp_defense=40,
+        speed=90,
+    ),
+}
+
+
 @dataclass(frozen=True)
 class Move:
     name: str
     power: int
+
+
+known_moves = {
+    'thunder shock': Move('Thunder Shock', 40),
+}
 
 
 class Pokemon:
