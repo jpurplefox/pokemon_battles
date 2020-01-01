@@ -37,3 +37,10 @@ def test_pokemon_attacks_other_pokemon_and_makes_damage():
 
     assert damage == 6
     assert bubble.hp == 22
+
+def test_can_add_a_pokemon_to_a_team():
+    spark = models.Pokemon('Spark', models.known_species['pikachu'], level=10)
+    team = models.Team()
+    team.add_pokemon(spark)
+
+    assert spark in team.pokemons

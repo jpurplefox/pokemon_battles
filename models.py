@@ -85,9 +85,22 @@ class Pokemon:
     def receive_damage(self, damage):
         self.hp = self.hp - damage
 
-    def perform_move_against(self, move, other_pokemon):
+    def perform_move_against(self, move_name, other_pokemon):
+        move = known_moves['thunder shock']
         level_factor = 2 + 2 * self.level / 5
         attack_defense_ratio = self.attack / other_pokemon.defense
         damage = math.floor(level_factor * move.power * attack_defense_ratio / 50) + 2
         other_pokemon.receive_damage(damage)
         return damage
+
+
+class Team:
+    def __init__(self):
+        self._pokemons = []
+
+    def add_pokemon(self, pokemon: Pokemon):
+        self._pokemons.append(pokemon)
+
+    @property
+    def pokemons(self):
+        return self._pokemons
