@@ -1,4 +1,7 @@
+import pytest
+
 import services
+from unit_of_work import AbstractUnitOfWork
 
 
 class FakeTeamRepository:
@@ -23,52 +26,65 @@ class FakeBattleRepository:
         return next(battle for battle in self._battles if battle.ref == ref)
 
 
-def test_add_team():
-    repository = FakeTeamRepository()
+class FakeUnitOfWork(AbstractUnitOfWork):
+    def __init__(self):
+        self.init_repositories(FakeTeamRepository(), FakeBattleRepository())
+        self.commited = False
 
-    services.add_team('My team', repository)
-    assert repository.get('My team') is not None
+    def commit(self):
+        self.commited = True
+
+    def rollback(self):
+        pass
+
+
+def test_add_team():
+    uow = FakeUnitOfWork()
+
+    services.add_team('My team', uow)
+    assert uow.teams.get('My team') is not None
+    assert uow.commited
 
 def test_add_pokemon_to_team():
-    repository = FakeTeamRepository()
+    uow = FakeUnitOfWork()
 
-    services.add_team('My team', repository)
+    services.add_team('My team', uow)
     services.add_pokemon_to_team(
         'My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
-        repository=repository
+        uow=uow
     )
-    assert len(repository.get('My team').pokemons) == 1
+    assert len(uow.teams.get('My team').pokemons) == 1
 
 def test_host_a_battle():
-    team_repository = FakeTeamRepository()
-    battle_repository = FakeBattleRepository()
+    uow = FakeUnitOfWork()
 
-    services.add_team('My team', team_repository)
+    services.add_team('My team', uow)
     services.add_pokemon_to_team(
         'My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
-        repository=team_repository
+        uow=uow
     )
 
-    battle_ref = services.host_battle('My team', team_repository, battle_repository)
+    battle_ref = services.host_battle('My team', uow)
 
-    assert battle_repository.get(battle_ref) is not None
+    assert uow.battles.get(battle_ref) is not None
 
 def test_join_a_battle():
-    team_repository = FakeTeamRepository()
-    battle_repository = FakeBattleRepository()
+    uow = FakeUnitOfWork()
 
-    services.add_team('Host team', team_repository)
+    services.add_team('Host team', uow)
     services.add_pokemon_to_team(
         'Host team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
-        repository=team_repository
+        uow=uow
     )
 
-    battle_ref = services.host_battle('Host team', team_repository, battle_repository)
+    battle_ref = services.host_battle('Host team', uow)
 
-    services.add_team('Opponent team', team_repository)
+    services.add_team('Opponent team', uow)
     services.add_pokemon_to_team(
         'Opponent team', 'Bubble', 'squirtle', lvl=20, move_names=['bubble'],
-        repository=team_repository
+        uow=uow
     )
 
-    services.join_battle(battle_ref, 'Opponent team', team_repository, battle_repository)
+    host_team = services.join_battle(battle_ref, 'Opponent team', uow)
+
+    assert host_team == 'Host team'
