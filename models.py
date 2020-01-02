@@ -95,7 +95,8 @@ class Pokemon:
 
 
 class Team:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self._pokemons = []
 
     def add_pokemon(self, pokemon: Pokemon):
