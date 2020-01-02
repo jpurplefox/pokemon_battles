@@ -44,6 +44,7 @@ class Move:
 
 known_moves = {
     'thunder shock': Move('Thunder Shock', 40),
+    'bubble': Move('Bubble', 40),
 }
 
 
@@ -105,3 +106,13 @@ class Team:
     @property
     def pokemons(self):
         return self._pokemons
+
+
+class Battle:
+    def __init__(self, ref, host_team):
+        self.ref = ref
+        self.host_team = host_team
+        self.opponent_team = None
+
+    def join(self, opponent_team):
+        self.opponent_team = opponent_team
