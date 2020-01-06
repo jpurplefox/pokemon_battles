@@ -1,6 +1,7 @@
 import pytest
 
-import services
+import commands
+from service_layer import messaggebus
 from unit_of_work import AbstractUnitOfWork
 
 
@@ -41,16 +42,16 @@ class FakeUnitOfWork(AbstractUnitOfWork):
 def test_add_team():
     uow = FakeUnitOfWork()
 
-    services.add_team('My team', uow)
+    messaggebus.handle(commands.AddTeam('My team'), uow)
     assert uow.teams.get('My team') is not None
     assert uow.commited
 
 def test_add_pokemon_to_team():
     uow = FakeUnitOfWork()
 
-    services.add_team('My team', uow)
-    services.add_pokemon_to_team(
-        'My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
+    messaggebus.handle(commands.AddTeam('My team'), uow)
+    messaggebus.handle(
+        commands.AddPokemonToTeam('My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock']),
         uow=uow
     )
     assert len(uow.teams.get('My team').pokemons) == 1
@@ -58,33 +59,33 @@ def test_add_pokemon_to_team():
 def test_host_a_battle():
     uow = FakeUnitOfWork()
 
-    services.add_team('My team', uow)
-    services.add_pokemon_to_team(
-        'My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
+    messaggebus.handle(commands.AddTeam('My team'), uow)
+    messaggebus.handle(
+        commands.AddPokemonToTeam('My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock']),
         uow=uow
     )
 
-    battle_ref = services.host_battle('My team', uow)
+    battle_ref = messaggebus.handle(commands.HostBattle('My team'), uow)
 
     assert uow.battles.get(battle_ref) is not None
 
 def test_join_a_battle():
     uow = FakeUnitOfWork()
 
-    services.add_team('Host team', uow)
-    services.add_pokemon_to_team(
-        'Host team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock'],
+    messaggebus.handle(commands.AddTeam('Host team'), uow)
+    messaggebus.handle(commands.AddTeam('Opponent team'), uow)
+
+    messaggebus.handle(
+        commands.AddPokemonToTeam('Host team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock']),
+        uow=uow
+    )
+    messaggebus.handle(
+        commands.AddPokemonToTeam('Opponent team', 'Bubble', 'squirtle', lvl=20, move_names=['bubble']),
         uow=uow
     )
 
-    battle_ref = services.host_battle('Host team', uow)
+    battle_ref = messaggebus.handle(commands.HostBattle('Host team'), uow)
 
-    services.add_team('Opponent team', uow)
-    services.add_pokemon_to_team(
-        'Opponent team', 'Bubble', 'squirtle', lvl=20, move_names=['bubble'],
-        uow=uow
-    )
-
-    host_team = services.join_battle(battle_ref, 'Opponent team', uow)
+    host_team = messaggebus.handle(commands.JoinBattle(battle_ref, 'Opponent team'), uow)
 
     assert host_team == 'Host team'
