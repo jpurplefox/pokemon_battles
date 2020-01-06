@@ -1,6 +1,7 @@
 import math
-
 from dataclasses import dataclass
+
+import events
 
 
 @dataclass(frozen=True)
@@ -53,7 +54,6 @@ class Pokemon:
         self.nickname = nickname
         self.species = species
         self.level = level
-        self.hp = self.max_hp
         self.moves = moves if moves else {}
 
     def _calculate_stats(self, base):
@@ -83,17 +83,6 @@ class Pokemon:
     def speed(self):
         return self._calculate_stats(self.species.speed)
 
-    def receive_damage(self, damage):
-        self.hp = self.hp - damage
-
-    def perform_move_against(self, move_name, other_pokemon):
-        move = known_moves['thunder shock']
-        level_factor = 2 + 2 * self.level / 5
-        attack_defense_ratio = self.attack / other_pokemon.defense
-        damage = math.floor(level_factor * move.power * attack_defense_ratio / 50) + 2
-        other_pokemon.receive_damage(damage)
-        return damage
-
 
 class Team:
     def __init__(self, name):
@@ -109,10 +98,49 @@ class Team:
 
 
 class Battle:
-    def __init__(self, ref, host_team):
+    def __init__(self, ref: str, host_team: Team):
         self.ref = ref
-        self.host_team = host_team
-        self.opponent_team = None
+
+        self.host_pokemons = [BattlingPokemon(pokemon) for pokemon in host_team.pokemons]
+        self.active_host_pokemon = self.host_pokemons[0]
+        self.host_next_move = None
+
+        self.opponent_pokemons = None
+        self.active_opponent_pokemon = None
+        self.opponent_next_move = None
+
+        self.turn = 1
+        self.events = []
 
     def join(self, opponent_team):
-        self.opponent_team = opponent_team
+        self.opponent_pokemons = [BattlingPokemon(pokemon) for pokemon in opponent_team.pokemons]
+        self.active_opponent_pokemon = self.opponent_pokemons[0]
+
+    def register_host_move(self, move: Move):
+        self.host_next_move = move
+
+    def register_opponent_move(self, move: Move):
+        self.opponent_next_move = move
+        self.events.append(events.TurnReady(self.ref))
+
+    def process_turn(self):
+        self.turn = self.turn + 1
+        self.active_host_pokemon.perform_move_against(self.host_next_move, self.active_opponent_pokemon)
+        self.active_opponent_pokemon.perform_move_against(self.opponent_next_move, self.active_host_pokemon)
+
+
+class BattlingPokemon:
+    def __init__(self, pokemon: Pokemon):
+        self.pokemon = pokemon
+        self.hp = pokemon.max_hp
+
+    def receive_damage(self, damage):
+        self.hp = self.hp - damage
+
+    def perform_move_against(self, move_name, other_pokemon):
+        move = known_moves['thunder shock']
+        level_factor = 2 + 2 * self.pokemon.level / 5
+        attack_defense_ratio = self.pokemon.attack / other_pokemon.pokemon.defense
+        damage = math.floor(level_factor * move.power * attack_defense_ratio / 50) + 2
+        other_pokemon.receive_damage(damage)
+        return damage

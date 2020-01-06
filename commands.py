@@ -28,3 +28,15 @@ class HostBattle(Command):
 class JoinBattle(Command):
     battle_ref: str
     team_name: str
+
+
+@dataclass(frozen=True)
+class RegisterHostMove(Command):
+    battle_ref: str
+    move_name: str
+
+
+@dataclass(frozen=True)
+class RegisterOpponentMove(Command):
+    battle_ref: str
+    move_name: str

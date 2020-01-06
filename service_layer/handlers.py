@@ -1,6 +1,7 @@
 import uuid
 
 import commands
+import events
 import models
 
 
@@ -26,6 +27,7 @@ def host_battle(cmd: commands.HostBattle, uow):
     with uow:
         team = uow.teams.get(cmd.team_name)
         uow.battles.add(models.Battle(ref, team))
+        uow.commit()
     return ref
 
 
@@ -34,4 +36,27 @@ def join_battle(cmd: commands.JoinBattle, uow):
         team = uow.teams.get(cmd.team_name)
         battle = uow.battles.get(cmd.battle_ref)
         battle.join(team)
-    return battle.host_team.name
+        uow.commit()
+
+
+def register_host_move(cmd: commands.RegisterHostMove, uow):
+    with uow:
+        battle = uow.battles.get(cmd.battle_ref)
+        move = models.known_moves[cmd.move_name]
+        battle.register_host_move(move)
+        uow.commit()
+
+
+def register_opponent_move(cmd: commands.RegisterOpponentMove, uow):
+    with uow:
+        battle = uow.battles.get(cmd.battle_ref)
+        move = models.known_moves[cmd.move_name]
+        battle.register_opponent_move(move)
+        uow.commit()
+
+
+def turn_ready(event: events.TurnReady, uow):
+    with uow:
+        battle = uow.battles.get(event.battle_ref)
+        battle.process_turn()
+        uow.commit()
