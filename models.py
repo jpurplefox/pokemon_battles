@@ -102,45 +102,65 @@ class Battle:
         self.ref = ref
 
         self.host_pokemons = [BattlingPokemon(pokemon) for pokemon in host_team.pokemons]
-        self.active_host_pokemon = self.host_pokemons[0]
-        self.host_next_move = None
+        self.host_pokemons[0].is_active = True
 
         self.opponent_pokemons = None
-        self.active_opponent_pokemon = None
-        self.opponent_next_move = None
 
         self.turn = 1
         self.events = []
 
     def join(self, opponent_team):
         self.opponent_pokemons = [BattlingPokemon(pokemon) for pokemon in opponent_team.pokemons]
-        self.active_opponent_pokemon = self.opponent_pokemons[0]
+        self.opponent_pokemons[0].is_active = True
+
+    @property
+    def active_host_pokemon(self):
+        return next(pokemon for pokemon in self.host_pokemons if pokemon.is_active)
+
+    @property
+    def active_opponent_pokemon(self):
+        return next(pokemon for pokemon in self.opponent_pokemons if pokemon.is_active)
 
     def register_host_move(self, move: Move):
-        self.host_next_move = move
+        self.active_host_pokemon.next_move = move
+        if self.active_opponent_pokemon.next_move:
+            self.events.append(events.TurnReady(self.ref))
 
     def register_opponent_move(self, move: Move):
-        self.opponent_next_move = move
-        self.events.append(events.TurnReady(self.ref))
+        self.active_opponent_pokemon.next_move = move
+        if self.active_host_pokemon.next_move:
+            self.events.append(events.TurnReady(self.ref))
 
     def process_turn(self):
         self.turn = self.turn + 1
-        self.active_host_pokemon.perform_move_against(self.host_next_move, self.active_opponent_pokemon)
-        self.active_opponent_pokemon.perform_move_against(self.opponent_next_move, self.active_host_pokemon)
+        self.events.append(events.HostMovePerformed(self.ref))
+        self.active_opponent_pokemon.perform_move_against(self.active_host_pokemon)
+
+    def perform_host_move(self):
+        pokemon_that_moved = next(pokemon for pokemon in self.host_pokemons if pokemon.next_move)
+        if pokemon_that_moved.is_active:
+            pokemon_that_moved.perform_move_against(self.active_opponent_pokemon)
+        pokemon_that_moved.next_move = None
+
+    def perform_opponent_move(self):
+        pokemon_that_moved = next(pokemon for pokemon in self.opponent_pokemons if pokemon.next_move)
+        if pokemon_that_moved.is_active:
+            pokemon_that_moved.perform_move_against(self.active_host_pokemon)
+        pokemon_that_moved.next_move = None
 
 
 class BattlingPokemon:
     def __init__(self, pokemon: Pokemon):
         self.pokemon = pokemon
         self.hp = pokemon.max_hp
+        self.is_active = False
+        self.next_move = None
 
     def receive_damage(self, damage):
         self.hp = self.hp - damage
 
-    def perform_move_against(self, move_name, other_pokemon):
-        move = known_moves['thunder shock']
+    def perform_move_against(self, other_pokemon):
         level_factor = 2 + 2 * self.pokemon.level / 5
         attack_defense_ratio = self.pokemon.attack / other_pokemon.pokemon.defense
-        damage = math.floor(level_factor * move.power * attack_defense_ratio / 50) + 2
+        damage = math.floor(level_factor * self.next_move.power * attack_defense_ratio / 50) + 2
         other_pokemon.receive_damage(damage)
-        return damage

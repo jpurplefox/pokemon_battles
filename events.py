@@ -8,3 +8,13 @@ class Event:
 @dataclass(frozen=True)
 class TurnReady(Event):
     battle_ref: str
+
+
+@dataclass(frozen=True)
+class HostMovePerformed(Event):
+    battle_ref: str
+
+
+@dataclass(frozen=True)
+class OpponentMovePerformed(Event):
+    battle_ref: str

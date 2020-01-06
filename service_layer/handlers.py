@@ -55,6 +55,20 @@ def register_opponent_move(cmd: commands.RegisterOpponentMove, uow):
         uow.commit()
 
 
+def host_move_performed(event: events.HostMovePerformed, uow):
+    with uow:
+        battle = uow.battles.get(event.battle_ref)
+        battle.perform_host_move()
+        uow.commit()
+
+
+def opponent_move_performed(event: events.HostMovePerformed, uow):
+    with uow:
+        battle = uow.battles.get(event.battle_ref)
+        battle.perform_opponent_move()
+        uow.commit()
+
+
 def turn_ready(event: events.TurnReady, uow):
     with uow:
         battle = uow.battles.get(event.battle_ref)

@@ -99,3 +99,19 @@ def test_a_battle_turn_is_successfully_complete():
     assert battle.turn == 2
     assert battle.active_host_pokemon.hp < battle.active_host_pokemon.pokemon.max_hp
     assert battle.active_opponent_pokemon.hp < battle.active_opponent_pokemon.pokemon.max_hp
+
+
+def test_opponent_can_choose_first_next_turn_move():
+    uow = FakeUnitOfWork()
+
+    battle_ref = create_a_battle(uow)
+
+    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'bubble'), uow)
+
+    battle = uow.battles.get(battle_ref)
+
+    assert battle.turn == 1
+
+    messagebus.handle(commands.RegisterHostMove(battle_ref, 'thunder shock'), uow)
+
+    assert battle.turn == 2
