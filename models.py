@@ -107,7 +107,6 @@ class Battle:
 
         self.opponent_pokemons = None
 
-        self.turn = 1
         self.events = []
         self.user_events = []
 
@@ -134,7 +133,6 @@ class Battle:
             self.events.append(events.TurnReady(self.ref))
 
     def process_turn(self):
-        self.turn = self.turn + 1
         self.events.append(events.HostMovePerformed(self.ref))
         self.events.append(events.OpponentMovePerformed(self.ref))
 
