@@ -1,7 +1,7 @@
 import models
 
 def test_pokemon_calculates_stats_properly():
-    spark = models.Pokemon('Spark', models.known_species['pikachu'], level=20)
+    spark = models.Pokemon('Spark', models.known_species['Pikachu'], level=20)
 
     assert spark.max_hp == 44
     assert spark.attack == 27

@@ -23,7 +23,7 @@ def add_pokemon_to_team(cmd: commands.AddPokemonToTeam, uow):
 
 
 def host_battle(cmd: commands.HostBattle, uow):
-    ref = uuid.uuid4()
+    ref = str(uuid.uuid4())
     with uow:
         team = uow.teams.get(cmd.team_name)
         uow.battles.add(models.Battle(ref, team))

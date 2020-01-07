@@ -1,7 +1,9 @@
 import commands
 import repositories
+import user_events
 from service_layer import messagebus
 from service_layer.unit_of_work import AbstractUnitOfWork
+from service_layer.user_messagebus import AbstractUserMessagebus
 
 
 class FakeTeamRepository:
@@ -27,9 +29,18 @@ class FakeBattleRepository(repositories.AbstractBattleRepository):
         return next(battle for battle in self._battles if battle.ref == ref)
 
 
+class FakeUserMessagebus(AbstractUserMessagebus):
+    def __init__(self):
+        self.events = []
+
+    def emit(self, event):
+        self.events.append(event)
+
+
 class FakeUnitOfWork(AbstractUnitOfWork):
     def __init__(self):
         self.init_repositories(FakeTeamRepository(), FakeBattleRepository())
+        self.user_messagebus = FakeUserMessagebus()
         self.commited = False
 
     def _commit(self):
@@ -52,7 +63,7 @@ def test_add_pokemon_to_team():
 
     messagebus.handle(commands.AddTeam('My team'), uow)
     messagebus.handle(
-        commands.AddPokemonToTeam('My team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock']),
+        commands.AddPokemonToTeam('My team', 'Spark', 'Pikachu', lvl=20, move_names=['Thunder Shock']),
         uow=uow
     )
     assert len(uow.teams.get('My team').pokemons) == 1
@@ -63,11 +74,11 @@ def create_a_battle(uow):
     messagebus.handle(commands.AddTeam('Opponent team'), uow)
 
     messagebus.handle(
-        commands.AddPokemonToTeam('Host team', 'Spark', 'pikachu', lvl=20, move_names=['thunder shock']),
+        commands.AddPokemonToTeam('Host team', 'Spark', 'Pikachu', lvl=20, move_names=['Thunder Shock']),
         uow=uow
     )
     messagebus.handle(
-        commands.AddPokemonToTeam('Opponent team', 'Bubble', 'squirtle', lvl=20, move_names=['bubble']),
+        commands.AddPokemonToTeam('Opponent team', 'Bubble', 'Squirtle', lvl=20, move_names=['Bubble']),
         uow=uow
     )
 
@@ -91,14 +102,19 @@ def test_a_battle_turn_is_successfully_complete():
 
     battle_ref = create_a_battle(uow)
 
-    messagebus.handle(commands.RegisterHostMove(battle_ref, 'thunder shock'), uow)
-    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'bubble'), uow)
+    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
+    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
 
     battle = uow.battles.get(battle_ref)
 
     assert battle.turn == 2
-    assert battle.active_host_pokemon.hp < battle.active_host_pokemon.pokemon.max_hp
-    assert battle.active_opponent_pokemon.hp < battle.active_opponent_pokemon.pokemon.max_hp
+
+    expected_events = [
+        user_events.PokemonUsedMove(battle_ref, 'Pikachu', 'Thunder Shock', 8),
+        user_events.PokemonUsedMove(battle_ref, 'Squirtle', 'Bubble', 13),
+    ]
+
+    assert uow.user_messagebus.events == expected_events
 
 
 def test_opponent_can_choose_first_next_turn_move():
@@ -106,12 +122,12 @@ def test_opponent_can_choose_first_next_turn_move():
 
     battle_ref = create_a_battle(uow)
 
-    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'bubble'), uow)
+    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
 
     battle = uow.battles.get(battle_ref)
 
     assert battle.turn == 1
 
-    messagebus.handle(commands.RegisterHostMove(battle_ref, 'thunder shock'), uow)
+    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
 
     assert battle.turn == 2
