@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  api:
+    build: '.'
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - FLASK_APP=endpoints/flask_app.py
+      - FLASK_DEBUG=1
+      - PYTHONUNBUFFERED=1
+    entrypoint:
+      - python
+      - run_flask.py
+    ports:
+      - "5000:5000"
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
