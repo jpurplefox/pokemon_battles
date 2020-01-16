@@ -1,6 +1,6 @@
 import abc
 
-import user_events
+from pokemon_battles.domain import user_events
 
 
 class AbstractUserMessagebus(abc.ABC):

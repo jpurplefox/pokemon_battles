@@ -1,8 +1,6 @@
 import uuid
 
-import commands
-import events
-import models
+from pokemon_battles.domain import commands, events, models
 
 
 def add_team(cmd: commands.AddTeam, uow):

@@ -1,4 +1,4 @@
-import models
+from pokemon_battles.domain import models
 
 def test_pokemon_calculates_stats_properly():
     spark = models.Pokemon('Spark', models.known_species['Pikachu'], level=20)

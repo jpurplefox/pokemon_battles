@@ -1,8 +1,7 @@
 import math
 from dataclasses import dataclass
 
-import events
-import user_events
+from . import events, user_events
 
 
 @dataclass(frozen=True)

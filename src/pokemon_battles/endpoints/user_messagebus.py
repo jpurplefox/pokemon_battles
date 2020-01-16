@@ -1,7 +1,7 @@
 from flask_socketio import SocketIO
 
 import user_events
-from service_layer.user_messagebus import AbstractUserMessagebus
+from pokemon_battles.service_layer.user_messagebus import AbstractUserMessagebus
 
 
 class FlaskSocketIOUserMessagebus(AbstractUserMessagebus):

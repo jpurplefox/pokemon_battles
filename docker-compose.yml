@@ -8,6 +8,9 @@ services:
       - FLASK_APP=endpoints/flask_app.py
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
+    volumes:
+      - ./src:/src
+      - ./tests:/tests
     entrypoint:
       - python
       - run_flask.py

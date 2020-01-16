@@ -1,6 +1,6 @@
 import abc
 
-import models
+from pokemon_battles.domain import models
 
 
 class AbstractBattleRepository(abc.ABC):

@@ -1,9 +1,8 @@
-import commands
-import repositories
-import user_events
-from service_layer import messagebus
-from service_layer.unit_of_work import AbstractUnitOfWork
-from service_layer.user_messagebus import AbstractUserMessagebus
+from pokemon_battles.adapters import repositories
+from pokemon_battles.domain import commands, user_events
+from pokemon_battles.service_layer import messagebus
+from pokemon_battles.service_layer.unit_of_work import AbstractUnitOfWork
+from pokemon_battles.service_layer.user_messagebus import AbstractUserMessagebus
 
 
 class FakeTeamRepository:

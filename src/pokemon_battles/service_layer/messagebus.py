@@ -1,8 +1,7 @@
 import logging
 from typing import Union
 
-import commands
-import events
+from pokemon_battles.domain import commands, events
 from . import handlers
 
 logger = logging.getLogger(__name__)
