@@ -1,5 +1,6 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Set
 
 from . import events, user_events
 
@@ -49,12 +50,29 @@ known_moves = {
 }
 
 
+@dataclass
 class Pokemon:
-    def __init__(self, nickname: str, species: Species, level: int, moves: set=None):
-        self.nickname = nickname
-        self.species = species
-        self.level = level
-        self.moves = moves if moves else {}
+    nickname: str
+    species: Species
+    level: int
+    moves: Set[Move] = field(default_factory=set)
+
+    def to_dict(self):
+        return {
+            'nickname': self.nickname,
+            'species': self.species.name,
+            'level': self.level,
+            'moves': [move.name for move in self.moves],
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            nickname=data['nickname'],
+            species=known_species[data['species']],
+            level=data['level'],
+            moves=[known_moves[move] for move in data.get('moves', [])],
+        )
 
     def _calculate_stats(self, base):
         return math.floor(5 + base * 2 * self.level / 100)
@@ -84,17 +102,26 @@ class Pokemon:
         return self._calculate_stats(self.species.speed)
 
 
+@dataclass
 class Team:
-    def __init__(self, name):
-        self.name = name
-        self._pokemons = []
+    name: str
+    pokemons: List[Pokemon] = field(default_factory=list)
 
     def add_pokemon(self, pokemon: Pokemon):
-        self._pokemons.append(pokemon)
+        self.pokemons.append(pokemon)
 
-    @property
-    def pokemons(self):
-        return self._pokemons
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'pokemons': [pokemon.to_dict() for pokemon in self.pokemons]
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            name=data['name'],
+            pokemons=[Pokemon.from_dict(pokemon_data) for pokemon_data in data.get('pokemons', [])]
+        )
 
 
 class Battle:

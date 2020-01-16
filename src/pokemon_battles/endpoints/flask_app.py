@@ -2,11 +2,13 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, send, join_room
 import eventlet
 
+from pokemon_battles import config
+
 eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins='*', message_queue='redis://redis:6379')
+socketio = SocketIO(app, cors_allowed_origins='*', message_queue=config.get_redis_uri())
 
 @app.route('/')
 def index():

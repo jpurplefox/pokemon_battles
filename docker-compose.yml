@@ -8,6 +8,8 @@ services:
       - FLASK_APP=endpoints/flask_app.py
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
+      - MONGO_HOST=mongo
+      - REDIS_HOST=redis
     volumes:
       - ./src:/src
       - ./tests:/tests
@@ -21,3 +23,8 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+
+  mongo:
+    image: mongo:4.2.2-bionic
+    ports:
+      - "27017:27017"

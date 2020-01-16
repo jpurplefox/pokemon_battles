@@ -5,14 +5,15 @@ from pokemon_battles.service_layer.unit_of_work import AbstractUnitOfWork
 from pokemon_battles.service_layer.user_messagebus import AbstractUserMessagebus
 
 
-class FakeTeamRepository:
+class FakeTeamRepository(repositories.AbstractTeamRepository):
     def __init__(self):
+        super().__init__()
         self._teams = []
 
-    def add(self, team):
+    def _add(self, team):
         self._teams.append(team)
 
-    def get(self, name):
+    def _get(self, name):
         return next(team for team in self._teams if team.name == name)
 
 
