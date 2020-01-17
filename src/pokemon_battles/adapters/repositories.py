@@ -53,3 +53,14 @@ class AbstractBattleRepository(abc.ABC):
         if battle:
             self.seen.add(battle)
         return battle
+
+
+class RedisBattleRepository(AbstractBattleRepository):
+    def _add(self, team: models.Team):
+        pass
+
+    def _get(self, name: str):
+        pass
+        if not raw_data:
+            return None
+        return models.Team.from_dict(raw_data)

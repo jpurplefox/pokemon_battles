@@ -1,6 +1,9 @@
 import os
 
 
+def get_api_url():
+    return os.environ.get('API_URL', 'http://localhost:5000')
+
 def get_mongo_uri():
     host = os.environ.get('MONGO_HOST', 'localhost')
     port = os.environ.get('MONGO_PORT', '27017')

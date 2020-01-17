@@ -1,5 +1,8 @@
 import abc
+from pymongo import MongoClient
 
+from pokemon_battles import config
+from pokemon_battles.adapters import repositories
 from . import messagebus
 
 
@@ -46,3 +49,19 @@ class AbstractUnitOfWork(abc.ABC):
     @property
     def battles(self):
         return self._battles
+
+
+class UnitOfWork(AbstractUnitOfWork):
+    def __init__(self):
+        mongo_database = MongoClient(config.get_mongo_uri()).pokemon
+        self.init_repositories(
+            repositories.MongoTeamRepository(mongo_database),
+            repositories.RedisBattleRepository()
+        )
+
+    def _commit(self):
+        for team in self._teams.seen:
+            self._teams.update(team)
+
+    def rollback(self):
+        pass
