@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, send, join_room
 import eventlet
 
@@ -36,6 +36,44 @@ def add_pokemon():
     )
     uow = unit_of_work.UnitOfWork()
     messagebus.handle(cmd, uow)
+    return 'OK', 200
+
+
+@app.route('/host_battle', methods=['POST'])
+def host_battle():
+    cmd = commands.HostBattle(
+        request.json['team_name'],
+    )
+    uow = unit_of_work.UnitOfWork()
+    battle_ref = messagebus.handle(cmd, uow)
+    return jsonify({'battle_ref': battle_ref}), 201
+
+
+@app.route('/join_battle', methods=['POST'])
+def join_battle():
+    cmd = commands.JoinBattle(
+        request.json['battle_ref'],
+        request.json['team_name'],
+    )
+    uow = unit_of_work.UnitOfWork()
+    battle_ref = messagebus.handle(cmd, uow)
+    return 'OK', 200
+
+
+@app.route('/register_a_move', methods=['POST'])
+def register_a_move():
+    if request.json['player'] == 'host':
+        cmd = commands.RegisterHostMove(
+            request.json['battle_ref'],
+            request.json['move_name'],
+        )
+    else:
+        cmd = commands.RegisterOpponentMove(
+            request.json['battle_ref'],
+            request.json['move_name'],
+        )
+    uow = unit_of_work.UnitOfWork()
+    battle_ref = messagebus.handle(cmd, uow)
     return 'OK', 200
 
 

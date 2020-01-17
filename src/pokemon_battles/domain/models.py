@@ -177,6 +177,9 @@ class Battle:
     host_pokemons: List[BattlingPokemon]
     opponent_pokemons: List[BattlingPokemon] = field(default_factory=list)
 
+    events: list = field(default_factory=list, repr=False, compare=False)
+    user_events: list = field(default_factory=list, repr=False, compare=False)
+
     def to_dict(self):
         return {
             'ref': self.ref,

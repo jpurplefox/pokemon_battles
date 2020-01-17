@@ -4,7 +4,7 @@ from redis import Redis
 
 from pokemon_battles import config
 from pokemon_battles.adapters import repositories
-from . import messagebus
+from . import messagebus, user_messagebus
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -60,10 +60,13 @@ class UnitOfWork(AbstractUnitOfWork):
             repositories.MongoTeamRepository(mongo_database),
             repositories.RedisBattleRepository(redis_client)
         )
+        self.user_messagebus = user_messagebus.FlaskSocketIOUserMessagebus(config.get_redis_uri())
 
     def _commit(self):
         for team in self._teams.seen:
             self._teams.update(team)
+        for battle in self._battles.seen:
+            self._battles.update(battle)
 
     def rollback(self):
         pass
