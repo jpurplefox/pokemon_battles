@@ -1,12 +1,111 @@
 <html>
   <body>
+    <div id="battle_needed">
+      <form id="host_battle" method="POST" action='#'>
+        <input type="text" name="team_name" placeholder="Team name">
+        <input type="submit" value="Join">
+      </form>
+
+      <form id="join_battle" method="POST" action='#'>
+        <input type="text" name="battle_ref" placeholder="Battle reference">
+        <input type="text" name="team_name" placeholder="Team name">
+        <input type="submit" value="Join">
+      </form>
+    </div>
+
+    <div id="waiting_for_opponent">
+      <div>Waiting for an opponent, share this code to a friend and ask him to join the battle</div>
+      <div id="battle_ref"></div>
+    </div>
+
+    <div id="battle">
+      <div>Battle Started</div>
+    </div>
+
     <script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     <script>
-      var socket = io('ws://127.0.0.1:5000/')
-      socket.on('move', function(msg) {
-        console.log(`Atacó ${msg.pokemon}`)
-      })
-      socket.emit('join', {room: 'battle'})
+      $(document).ready(function() {
+        api_url = 'http://127.0.0.1:5000'
+        var socket = io('ws://127.0.0.1:5000/')
+        socket.on('move', function(msg) {
+          console.log(`Atacó ${msg.pokemon}`)
+        })
+        socket.on('battle_ready', function(msg) {
+          show_battle()
+        })
+
+        function hide_all () {
+          $('#battle_needed').hide()
+          $('#waiting_for_opponent').hide()
+          $('#battle').hide()
+        }
+
+        function show_battle_needed () {
+          hide_all()
+          $('#battle_needed').show()
+        }
+
+        function show_waiting_for_opponent (battle_ref) {
+          hide_all()
+          $('#waiting_for_opponent #battle_ref').text(battle_ref)
+          $('#waiting_for_opponent').show()
+        }
+
+        function show_battle () {
+          hide_all()
+          $('#battle').show()
+        }
+
+        function join_battle_socket (battle_ref) {
+          socket.emit('join', {room: battle_ref})
+        }
+
+        function host_battle (team_name) {
+          fetch(`${api_url}/host_battle`, {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({team_name})
+          })
+          .then(res => res.json())
+          .then(data => {
+            join_battle_socket(data.battle_ref)
+            show_waiting_for_opponent(data.battle_ref)
+          })
+        }
+
+        function join_battle (battle_ref, team_name) {
+          fetch(`${api_url}/join_battle`, {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({battle_ref, team_name})
+          })
+          .then(res => res.json())
+          .then(data => {
+            join_battle_socket(data.battle_ref)
+            show_battle()
+          })
+        }
+
+        $('form#host_battle').submit(() => {
+          host_battle($('#host_battle input[name="team_name"]').val())
+          return false
+        })
+
+        $('form#join_battle').submit(() => {
+          join_battle(
+            $('#join_battle input[name="battle_ref"]').val(),
+            $('#join_battle input[name="team_name"]').val()
+          )
+          return false
+        })
+
+        show_battle_needed()
+    })
     </script>
   </body>
 </html>

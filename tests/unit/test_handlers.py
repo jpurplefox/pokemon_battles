@@ -108,6 +108,7 @@ def test_a_battle_turn_is_successfully_complete():
     battle = uow.battles.get(battle_ref)
 
     expected_events = [
+        user_events.BattleReady(battle_ref),
         user_events.PokemonUsedMove(battle_ref, 'Pikachu', 'Thunder Shock', 8),
         user_events.PokemonUsedMove(battle_ref, 'Squirtle', 'Bubble', 13),
     ]
@@ -122,11 +123,12 @@ def test_opponent_can_choose_first_next_turn_move():
 
     messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
 
-    assert uow.user_messagebus.events == []
+    assert uow.user_messagebus.events == [user_events.BattleReady(battle_ref)]
 
     messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
 
     expected_events = [
+        user_events.BattleReady(battle_ref),
         user_events.PokemonUsedMove(battle_ref, 'Pikachu', 'Thunder Shock', 8),
         user_events.PokemonUsedMove(battle_ref, 'Squirtle', 'Bubble', 13),
     ]

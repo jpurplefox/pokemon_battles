@@ -216,6 +216,7 @@ class Battle:
             BattlingPokemon(pokemon, pokemon.max_hp) for pokemon in opponent_team.pokemons
         ]
         self.opponent_pokemons[0].is_active = True
+        self.user_events.append(user_events.BattleReady(self.ref))
 
     @property
     def active_host_pokemon(self):

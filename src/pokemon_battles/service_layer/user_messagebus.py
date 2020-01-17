@@ -18,4 +18,7 @@ class FlaskSocketIOUserMessagebus(AbstractUserMessagebus):
         self.socketio = SocketIO(message_queue=message_queue)
 
     def emit(self, event: user_events.UserEvent):
-        self.socketio.emit('move', {'pokemon': event.pokemon}, room=event.battle_ref)
+        if isinstance(event, user_events.BattleReady):
+            self.socketio.emit('battle_ready', {'battle_ref': event.battle_ref}, room=event.battle_ref)
+        if isinstance(event, user_events.PokemonUsedMove):
+            self.socketio.emit('move', {'pokemon': event.pokemon}, room=event.battle_ref)

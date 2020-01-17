@@ -22,7 +22,7 @@ def add_team():
     cmd = commands.AddTeam(request.json['name'])
     uow = unit_of_work.UnitOfWork()
     messagebus.handle(cmd, uow)
-    return 'OK', 201
+    return jsonify({'status': 'OK'}), 201
 
 
 @app.route('/add_pokemon', methods=['POST'])
@@ -36,7 +36,7 @@ def add_pokemon():
     )
     uow = unit_of_work.UnitOfWork()
     messagebus.handle(cmd, uow)
-    return 'OK', 200
+    return jsonify({'status': 'OK'}), 200
 
 
 @app.route('/host_battle', methods=['POST'])
@@ -57,7 +57,7 @@ def join_battle():
     )
     uow = unit_of_work.UnitOfWork()
     battle_ref = messagebus.handle(cmd, uow)
-    return 'OK', 200
+    return jsonify({'status': 'OK'}), 200
 
 
 @app.route('/register_a_move', methods=['POST'])
@@ -74,7 +74,7 @@ def register_a_move():
         )
     uow = unit_of_work.UnitOfWork()
     battle_ref = messagebus.handle(cmd, uow)
-    return 'OK', 200
+    return jsonify({'status': 'OK'}), 200
 
 
 @socketio.on('connect')

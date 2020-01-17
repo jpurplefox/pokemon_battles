@@ -11,3 +11,8 @@ class PokemonUsedMove(UserEvent):
     pokemon: str
     move: str
     damage: int
+
+
+@dataclass
+class BattleReady(UserEvent):
+    battle_ref: str
