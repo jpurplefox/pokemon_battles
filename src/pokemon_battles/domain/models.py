@@ -1,4 +1,5 @@
 import math
+
 from dataclasses import dataclass, field
 from typing import List, Set
 
@@ -124,20 +125,93 @@ class Team:
         )
 
 
+@dataclass
+class BattlingPokemon:
+    pokemon: Pokemon
+    hp: int = 0
+    is_active: bool = False
+    next_move: Move = None
+
+    def to_dict(self):
+        if self.next_move:
+            move_name = self.next_move.name
+        else:
+            move_name = None
+
+        return {
+            'pokemon': self.pokemon.to_dict(),
+            'hp': self.hp,
+            'is_active': self.is_active,
+            'next_move': move_name
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        if move_name := data.get('next_move', None):
+            next_move = known_moves[move_name]
+        else:
+            next_move = None
+
+        return cls(
+            pokemon=Pokemon.from_dict(data['pokemon']),
+            hp=data['hp'],
+            is_active=data['is_active'],
+            next_move=next_move,
+        )
+
+    def receive_damage(self, damage):
+        self.hp = self.hp - damage
+
+    def perform_move_against(self, other_pokemon):
+        level_factor = 2 + 2 * self.pokemon.level / 5
+        attack_defense_ratio = self.pokemon.attack / other_pokemon.pokemon.defense
+        damage = math.floor(level_factor * self.next_move.power * attack_defense_ratio / 50) + 2
+        other_pokemon.receive_damage(damage)
+
+        return damage
+
+
+@dataclass
 class Battle:
-    def __init__(self, ref: str, host_team: Team):
-        self.ref = ref
+    ref: str
+    host_pokemons: List[BattlingPokemon]
+    opponent_pokemons: List[BattlingPokemon] = field(default_factory=list)
 
-        self.host_pokemons = [BattlingPokemon(pokemon) for pokemon in host_team.pokemons]
-        self.host_pokemons[0].is_active = True
+    def to_dict(self):
+        return {
+            'ref': self.ref,
+            'host_pokemons': [pokemon.to_dict() for pokemon in self.host_pokemons],
+            'opponent_pokemons': [pokemon.to_dict() for pokemon in self.opponent_pokemons],
+        }
 
-        self.opponent_pokemons = None
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            ref=data['ref'],
+            host_pokemons=[
+                BattlingPokemon.from_dict(pokemon) for pokemon in data.get('host_pokemons', [])
+            ],
+            opponent_pokemons=[
+                BattlingPokemon.from_dict(pokemon) for pokemon in data.get('opponent_pokemons', [])
+            ],
+        )
 
-        self.events = []
-        self.user_events = []
+    @classmethod
+    def host(cls, ref: str, host_team: Team):
+        battle = cls(
+            ref,
+            [BattlingPokemon(pokemon, pokemon.max_hp) for pokemon in host_team.pokemons],
+        )
+        battle.host_pokemons[0].is_active = True
+
+        battle.events = []
+        battle.user_events = []
+        return battle
 
     def join(self, opponent_team):
-        self.opponent_pokemons = [BattlingPokemon(pokemon) for pokemon in opponent_team.pokemons]
+        self.opponent_pokemons = [
+            BattlingPokemon(pokemon, pokemon.max_hp) for pokemon in opponent_team.pokemons
+        ]
         self.opponent_pokemons[0].is_active = True
 
     @property
@@ -183,22 +257,3 @@ class Battle:
     def perform_opponent_move(self):
         pokemon_that_moved = next(pokemon for pokemon in self.opponent_pokemons if pokemon.next_move)
         self.perform_move(pokemon_that_moved, self.active_host_pokemon)
-
-
-class BattlingPokemon:
-    def __init__(self, pokemon: Pokemon):
-        self.pokemon = pokemon
-        self.hp = pokemon.max_hp
-        self.is_active = False
-        self.next_move = None
-
-    def receive_damage(self, damage):
-        self.hp = self.hp - damage
-
-    def perform_move_against(self, other_pokemon):
-        level_factor = 2 + 2 * self.pokemon.level / 5
-        attack_defense_ratio = self.pokemon.attack / other_pokemon.pokemon.defense
-        damage = math.floor(level_factor * self.next_move.power * attack_defense_ratio / 50) + 2
-        other_pokemon.receive_damage(damage)
-
-        return damage

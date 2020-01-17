@@ -1,5 +1,6 @@
 import abc
 from pymongo import MongoClient
+from redis import Redis
 
 from pokemon_battles import config
 from pokemon_battles.adapters import repositories
@@ -54,9 +55,10 @@ class AbstractUnitOfWork(abc.ABC):
 class UnitOfWork(AbstractUnitOfWork):
     def __init__(self):
         mongo_database = MongoClient(config.get_mongo_uri()).pokemon
+        redis_client = Redis.from_url(url=config.get_redis_uri())
         self.init_repositories(
             repositories.MongoTeamRepository(mongo_database),
-            repositories.RedisBattleRepository()
+            repositories.RedisBattleRepository(redis_client)
         )
 
     def _commit(self):

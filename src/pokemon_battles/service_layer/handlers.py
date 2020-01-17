@@ -24,7 +24,7 @@ def host_battle(cmd: commands.HostBattle, uow):
     ref = str(uuid.uuid4())
     with uow:
         team = uow.teams.get(cmd.team_name)
-        uow.battles.add(models.Battle(ref, team))
+        uow.battles.add(models.Battle.host(ref, team))
         uow.commit()
     return ref
 
