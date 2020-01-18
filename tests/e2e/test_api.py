@@ -41,6 +41,22 @@ def post_to_host_a_battle(team_name):
     return data['battle_ref']
 
 
+def get_battle(battle_ref):
+    url = config.get_api_url()
+    r = requests.get(f'{url}/battle/{battle_ref}')
+    assert r.status_code == 200
+
+    return r.json()
+
+
+def get_moves(battle_ref, player):
+    url = config.get_api_url()
+    r = requests.get(f'{url}/battle/{battle_ref}/moves', {'player': player})
+    assert r.status_code == 200
+
+    return r.json()
+
+
 def post_to_join_a_battle(battle_ref, team_name):
     url = config.get_api_url()
     r = requests.post(
@@ -76,6 +92,11 @@ def test_battle_happy_path():
 
     battle_ref = post_to_host_a_battle(host_team_name)
     post_to_join_a_battle(battle_ref, opponent_team_name)
+
+    battle_data = get_battle(battle_ref)
+    assert battle_data is not None
+    assert get_moves(battle_ref, 'host') == {'moves': ['Thunder Shock']}
+    assert get_moves(battle_ref, 'opponent') == {'moves': ['Bubble']}
 
     post_to_register_a_move(battle_ref, 'host', 'Thunder Shock')
     post_to_register_a_move(battle_ref, 'opponent', 'Bubble')

@@ -111,6 +111,7 @@ def test_a_battle_turn_is_successfully_complete():
         user_events.BattleReady(battle_ref),
         user_events.PokemonUsedMove(battle_ref, 'Pikachu', 'Thunder Shock', 8),
         user_events.PokemonUsedMove(battle_ref, 'Squirtle', 'Bubble', 13),
+        user_events.TurnReady(battle_ref),
     ]
 
     assert uow.user_messagebus.events == expected_events
@@ -123,14 +124,8 @@ def test_opponent_can_choose_first_next_turn_move():
 
     messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
 
-    assert uow.user_messagebus.events == [user_events.BattleReady(battle_ref)]
+    assert user_events.TurnReady(battle_ref) not in uow.user_messagebus.events
 
     messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
 
-    expected_events = [
-        user_events.BattleReady(battle_ref),
-        user_events.PokemonUsedMove(battle_ref, 'Pikachu', 'Thunder Shock', 8),
-        user_events.PokemonUsedMove(battle_ref, 'Squirtle', 'Bubble', 13),
-    ]
-
-    assert uow.user_messagebus.events == expected_events
+    assert user_events.TurnReady(battle_ref) in uow.user_messagebus.events

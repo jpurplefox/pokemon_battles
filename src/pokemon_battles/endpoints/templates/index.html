@@ -3,7 +3,7 @@
     <div id="battle_needed">
       <form id="host_battle" method="POST" action='#'>
         <input type="text" name="team_name" placeholder="Team name">
-        <input type="submit" value="Join">
+        <input type="submit" value="Host">
       </form>
 
       <form id="join_battle" method="POST" action='#'>
@@ -20,6 +20,15 @@
 
     <div id="battle">
       <div>Battle Started</div>
+      <div id="battle_data"></div>
+
+      <form id="register_a_move" method="POST" action='#'>
+        <select name="move">
+        </select>
+        <input type="submit" value="Confirm move">
+      </form>
+
+      <div id="battle_events"></div>
     </div>
 
     <script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
@@ -29,11 +38,22 @@
         api_url = 'http://127.0.0.1:5000'
         var socket = io('ws://127.0.0.1:5000/')
         socket.on('move', function(msg) {
-          console.log(`Atacó ${msg.pokemon}`)
+          show_event(`${msg.pokemon} used ${msg.move}`)
         })
         socket.on('battle_ready', function(msg) {
-          show_battle()
+          show_battle(msg.battle_ref)
+          show_event('Battle will start')
+          start_turn()
         })
+        socket.on('turn_ready', function(msg) {
+          refresh_battle()
+          start_turn()
+          show_event('Turn is ready')
+        })
+
+        function show_event (msg) {
+          $('#battle_events').append(`<p>${msg}</p>`)
+        }
 
         function hide_all () {
           $('#battle_needed').hide()
@@ -52,8 +72,9 @@
           $('#waiting_for_opponent').show()
         }
 
-        function show_battle () {
+        function show_battle (battle_ref) {
           hide_all()
+          refresh_battle()
           $('#battle').show()
         }
 
@@ -71,6 +92,8 @@
           })
           .then(res => res.json())
           .then(data => {
+            window.battle_ref = data.battle_ref
+            window.player = 'host'
             join_battle_socket(data.battle_ref)
             show_waiting_for_opponent(data.battle_ref)
           })
@@ -86,8 +109,45 @@
           })
           .then(res => res.json())
           .then(data => {
-            join_battle_socket(data.battle_ref)
-            show_battle()
+            join_battle_socket(battle_ref)
+            show_battle(battle_ref)
+            start_turn(battle_ref)
+          })
+        }
+
+        function register_a_move (battle_ref, move_name) {
+          fetch(`${api_url}/register_a_move`, {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({battle_ref, move_name, player: window.player})
+          })
+          .then(res => res.json())
+          .then(data => {
+            $('#register_a_move').hide()
+          })
+        }
+
+        function start_turn () {
+          refresh_battle()
+          show_moves()
+        }
+
+        function refresh_battle () {
+          fetch(`${api_url}/battle/${window.battle_ref}`)
+          .then(res => res.json())
+          .then(data => $('#battle_data').text(JSON.stringify(data)))
+        }
+
+        function show_moves () {
+          fetch(`${api_url}/battle/${window.battle_ref}/moves?player=${window.player}`)
+          .then(res => res.json())
+          .then(data => {
+            data.moves.forEach((move) => {
+              $('select[name="move"]').append(`<option value="${move}">${move}</option>`)
+              $('#register_a_move').show()
+            })
           })
         }
 
@@ -96,9 +156,19 @@
           return false
         })
 
+        $('form#register_a_move').submit(() => {
+          register_a_move(
+            battle_ref,
+            $('#register_a_move select[name="move"]').val()
+          )
+          return false
+        })
+
         $('form#join_battle').submit(() => {
+          window.battle_ref = $('#join_battle input[name="battle_ref"]').val(),
+          window.player = 'opponent'
           join_battle(
-            $('#join_battle input[name="battle_ref"]').val(),
+            window.battle_ref,
             $('#join_battle input[name="team_name"]').val()
           )
           return false

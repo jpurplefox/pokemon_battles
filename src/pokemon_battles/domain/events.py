@@ -11,6 +11,11 @@ class TurnReady(Event):
 
 
 @dataclass(frozen=True)
+class TurnFinished(Event):
+    battle_ref: str
+
+
+@dataclass(frozen=True)
 class HostMovePerformed(Event):
     battle_ref: str
 

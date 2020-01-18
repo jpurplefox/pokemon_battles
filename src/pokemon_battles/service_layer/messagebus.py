@@ -25,7 +25,7 @@ def handle_event(event: events.Event, uow):
             handler(event, uow=uow)
         except:
             logger.exception('Exception handling event %s', event)
-            continue
+            raise
 
 
 def handle_command(command, uow):
@@ -42,6 +42,7 @@ EVENT_HANDLERS = {
     events.HostMovePerformed: [handlers.host_move_performed],
     events.OpponentMovePerformed: [handlers.opponent_move_performed],
     events.TurnReady: [handlers.turn_ready],
+    events.TurnFinished: [handlers.turn_finished],
 }
 
 

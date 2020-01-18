@@ -60,6 +60,28 @@ def join_battle():
     return jsonify({'status': 'OK'}), 200
 
 
+@app.route('/battle/<ref>', methods=['GET'])
+def get_battle(ref):
+    uow = unit_of_work.UnitOfWork()
+    with uow:
+        battle = uow.battles.get(ref)
+    return jsonify(battle.to_dict()), 200
+
+
+@app.route('/battle/<ref>/moves', methods=['GET'])
+def get_moves(ref):
+    uow = unit_of_work.UnitOfWork()
+    player = request.args.get('player')
+    with uow:
+        battle = uow.battles.get(ref)
+
+    if player == 'host':
+        moves = battle.get_host_possible_moves()
+    if player == 'opponent':
+        moves = battle.get_opponent_possible_moves()
+    return jsonify({'moves': moves}), 200
+
+
 @app.route('/register_a_move', methods=['POST'])
 def register_a_move():
     if request.json['player'] == 'host':

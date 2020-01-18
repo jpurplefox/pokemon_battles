@@ -72,3 +72,10 @@ def turn_ready(event: events.TurnReady, uow):
         battle = uow.battles.get(event.battle_ref)
         battle.process_turn()
         uow.commit()
+
+
+def turn_finished(event: events.TurnFinished, uow):
+    with uow:
+        battle = uow.battles.get(event.battle_ref)
+        battle.finish_turn()
+        uow.commit()

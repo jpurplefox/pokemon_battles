@@ -239,6 +239,10 @@ class Battle:
     def process_turn(self):
         self.events.append(events.HostMovePerformed(self.ref))
         self.events.append(events.OpponentMovePerformed(self.ref))
+        self.events.append(events.TurnFinished(self.ref))
+
+    def finish_turn(self):
+        self.user_events.append(user_events.TurnReady(self.ref))
 
     def perform_move(self, pokemon: Pokemon, opponent: Pokemon):
         if pokemon.is_active:
@@ -261,3 +265,9 @@ class Battle:
     def perform_opponent_move(self):
         pokemon_that_moved = next(pokemon for pokemon in self.opponent_pokemons if pokemon.next_move)
         self.perform_move(pokemon_that_moved, self.active_host_pokemon)
+
+    def get_host_possible_moves(self):
+        return [move.name for move in self.active_host_pokemon.pokemon.moves]
+
+    def get_opponent_possible_moves(self):
+        return [move.name for move in self.active_opponent_pokemon.pokemon.moves]

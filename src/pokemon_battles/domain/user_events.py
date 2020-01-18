@@ -16,3 +16,8 @@ class PokemonUsedMove(UserEvent):
 @dataclass
 class BattleReady(UserEvent):
     battle_ref: str
+
+
+@dataclass
+class TurnReady(UserEvent):
+    battle_ref: str
