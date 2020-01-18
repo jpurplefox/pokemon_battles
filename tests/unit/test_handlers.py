@@ -129,3 +129,29 @@ def test_opponent_can_choose_first_next_turn_move():
     messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
 
     assert user_events.TurnReady(battle_ref) in uow.user_messagebus.events
+
+
+def test_a_battle_finishes():
+    uow = FakeUnitOfWork()
+
+    messagebus.handle(commands.AddTeam('Host team'), uow)
+    messagebus.handle(commands.AddTeam('Opponent team'), uow)
+
+    messagebus.handle(
+        commands.AddPokemonToTeam('Host team', 'Flame', 'Ninetales', lvl=100, move_names=['Flamethrower']),
+        uow=uow
+    )
+    messagebus.handle(
+        commands.AddPokemonToTeam('Opponent team', 'Buggy', 'Caterpie', lvl=5, move_names=['Tackle']),
+        uow=uow
+    )
+
+    battle_ref = messagebus.handle(commands.HostBattle('Host team'), uow)
+
+    messagebus.handle(commands.JoinBattle(battle_ref, 'Opponent team'), uow)
+
+    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Flamethrower'), uow)
+    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Tackle'), uow)
+
+    assert user_events.PokemonFainted(battle_ref, 'Caterpie') in uow.user_messagebus.events
+    assert user_events.BattleFinished(battle_ref, 'host') in uow.user_messagebus.events

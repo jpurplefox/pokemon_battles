@@ -36,6 +36,24 @@ known_species = {
         sp_defense=40,
         speed=90,
     ),
+    'Caterpie': Species(
+        'Caterpie',
+        hp=45,
+        attack=30,
+        defense=35,
+        sp_attack=20,
+        sp_defense=20,
+        speed=45,
+    ),
+    'Ninetales': Species(
+        'Ninetales',
+        hp=73,
+        attack=76,
+        defense=75,
+        sp_attack=81,
+        sp_defense=100,
+        speed=100,
+    ),
 }
 
 
@@ -48,6 +66,8 @@ class Move:
 known_moves = {
     'Thunder Shock': Move('Thunder Shock', 40),
     'Bubble': Move('Bubble', 40),
+    'Flamethrower': Move('Flamethrower', 90),
+    'Tackle': Move('Tackle', 40),
 }
 
 
@@ -170,6 +190,10 @@ class BattlingPokemon:
 
         return damage
 
+    @property
+    def is_fainted(self):
+        return self.hp <= 0
+
 
 @dataclass
 class Battle:
@@ -242,7 +266,18 @@ class Battle:
         self.events.append(events.TurnFinished(self.ref))
 
     def finish_turn(self):
-        self.user_events.append(user_events.TurnReady(self.ref))
+        if self.active_host_pokemon.is_fainted:
+            self.user_events.append(
+                user_events.PokemonFainted(self.ref, self.active_host_pokemon.pokemon.species.name)
+            )
+            self.user_events.append(user_events.BattleFinished(self.ref, 'opponent'))
+        elif self.active_opponent_pokemon.is_fainted:
+            self.user_events.append(
+                user_events.PokemonFainted(self.ref, self.active_opponent_pokemon.pokemon.species.name)
+            )
+            self.user_events.append(user_events.BattleFinished(self.ref, 'host'))
+        else:
+            self.user_events.append(user_events.TurnReady(self.ref))
 
     def perform_move(self, pokemon: Pokemon, opponent: Pokemon):
         if pokemon.is_active:

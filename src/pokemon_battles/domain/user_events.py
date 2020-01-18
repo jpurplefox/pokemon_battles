@@ -19,5 +19,17 @@ class BattleReady(UserEvent):
 
 
 @dataclass
+class BattleFinished(UserEvent):
+    battle_ref: str
+    winner: str
+
+
+@dataclass
 class TurnReady(UserEvent):
     battle_ref: str
+
+
+@dataclass
+class PokemonFainted(UserEvent):
+    battle_ref: str
+    pokemon: str

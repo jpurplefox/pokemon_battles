@@ -45,6 +45,17 @@
           show_event('Battle will start')
           start_turn()
         })
+        socket.on('pokemon_fainted', function(msg) {
+          show_event(`${msg.pokemon} fainted!`)
+        })
+        socket.on('battle_finished', function(msg) {
+          refresh_battle()
+          if (msg.winner == window.player) {
+              show_event('You win')
+          } else {
+              show_event('You lost')
+          }
+        })
         socket.on('turn_ready', function(msg) {
           refresh_battle()
           start_turn()
