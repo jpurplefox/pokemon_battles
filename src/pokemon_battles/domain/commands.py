@@ -31,12 +31,14 @@ class JoinBattle(Command):
 
 
 @dataclass(frozen=True)
-class RegisterHostMove(Command):
+class RegisterUseMove(Command):
     battle_ref: str
+    player: str
     move_name: str
 
 
 @dataclass(frozen=True)
-class RegisterOpponentMove(Command):
+class RegisterChangePokemon(Command):
     battle_ref: str
-    move_name: str
+    player: str
+    pokemon_nickname: str

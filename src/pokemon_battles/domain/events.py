@@ -16,10 +16,20 @@ class TurnFinished(Event):
 
 
 @dataclass(frozen=True)
-class HostMovePerformed(Event):
+class MovePerformed(Event):
     battle_ref: str
+    player: str
+    pokemon_nickname: str
+    move_name: str
 
 
 @dataclass(frozen=True)
 class OpponentMovePerformed(Event):
     battle_ref: str
+
+
+@dataclass(frozen=True)
+class PokemonChanged(Event):
+    battle_ref: str
+    player: str
+    pokemon_nickname: str

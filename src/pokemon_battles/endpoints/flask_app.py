@@ -84,16 +84,11 @@ def get_moves(ref):
 
 @app.route('/register_a_move', methods=['POST'])
 def register_a_move():
-    if request.json['player'] == 'host':
-        cmd = commands.RegisterHostMove(
-            request.json['battle_ref'],
-            request.json['move_name'],
-        )
-    else:
-        cmd = commands.RegisterOpponentMove(
-            request.json['battle_ref'],
-            request.json['move_name'],
-        )
+    cmd = commands.RegisterUseMove(
+        request.json['battle_ref'],
+        request.json['player'],
+        request.json['move_name'],
+    )
     uow = unit_of_work.UnitOfWork()
     battle_ref = messagebus.handle(cmd, uow)
     return jsonify({'status': 'OK'}), 200

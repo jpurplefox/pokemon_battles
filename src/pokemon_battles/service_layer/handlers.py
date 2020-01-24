@@ -37,33 +37,31 @@ def join_battle(cmd: commands.JoinBattle, uow):
         uow.commit()
 
 
-def register_host_move(cmd: commands.RegisterHostMove, uow):
+def register_use_move(cmd: commands.RegisterUseMove, uow):
     with uow:
         battle = uow.battles.get(cmd.battle_ref)
-        move = models.known_moves[cmd.move_name]
-        battle.register_host_move(move)
+        battle.register_use_move(cmd.player, cmd.move_name)
         uow.commit()
 
 
-def register_opponent_move(cmd: commands.RegisterOpponentMove, uow):
+def register_change_pokemon(cmd: commands.RegisterChangePokemon, uow):
     with uow:
         battle = uow.battles.get(cmd.battle_ref)
-        move = models.known_moves[cmd.move_name]
-        battle.register_opponent_move(move)
+        battle.register_change_pokemon(cmd.player, cmd.pokemon_nickname)
         uow.commit()
 
 
-def host_move_performed(event: events.HostMovePerformed, uow):
+def move_performed(event: events.MovePerformed, uow):
     with uow:
         battle = uow.battles.get(event.battle_ref)
-        battle.perform_host_move()
+        battle.perform_move(event.player, event.pokemon_nickname, event.move_name)
         uow.commit()
 
 
-def opponent_move_performed(event: events.HostMovePerformed, uow):
+def pokemon_changed(event: events.PokemonChanged, uow):
     with uow:
         battle = uow.battles.get(event.battle_ref)
-        battle.perform_opponent_move()
+        battle.change_pokemon(event.player, event.pokemon_nickname)
         uow.commit()
 
 

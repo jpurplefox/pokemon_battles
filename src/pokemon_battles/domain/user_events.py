@@ -33,3 +33,10 @@ class TurnReady(UserEvent):
 class PokemonFainted(UserEvent):
     battle_ref: str
     pokemon: str
+
+
+@dataclass
+class PokemonChanged(UserEvent):
+    battle_ref: str
+    player: str
+    pokemon_nickname: str

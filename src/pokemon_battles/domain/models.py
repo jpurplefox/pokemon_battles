@@ -150,42 +150,29 @@ class BattlingPokemon:
     pokemon: Pokemon
     hp: int = 0
     is_active: bool = False
-    next_move: Move = None
 
     def to_dict(self):
-        if self.next_move:
-            move_name = self.next_move.name
-        else:
-            move_name = None
-
         return {
             'pokemon': self.pokemon.to_dict(),
             'hp': self.hp,
             'is_active': self.is_active,
-            'next_move': move_name
         }
 
     @classmethod
     def from_dict(cls, data):
-        if move_name := data.get('next_move', None):
-            next_move = known_moves[move_name]
-        else:
-            next_move = None
-
         return cls(
             pokemon=Pokemon.from_dict(data['pokemon']),
             hp=data['hp'],
             is_active=data['is_active'],
-            next_move=next_move,
         )
 
     def receive_damage(self, damage):
         self.hp = self.hp - damage
 
-    def perform_move_against(self, other_pokemon):
+    def perform_move_against(self, move, other_pokemon):
         level_factor = 2 + 2 * self.pokemon.level / 5
         attack_defense_ratio = self.pokemon.attack / other_pokemon.pokemon.defense
-        damage = math.floor(level_factor * self.next_move.power * attack_defense_ratio / 50) + 2
+        damage = math.floor(level_factor * move.power * attack_defense_ratio / 50) + 2
         other_pokemon.receive_damage(damage)
 
         return damage
@@ -194,12 +181,62 @@ class BattlingPokemon:
     def is_fainted(self):
         return self.hp <= 0
 
+    def set_active(self, value):
+        self.is_active = value
+
+
+class Action:
+    @staticmethod
+    def from_dict(data):
+        if not data:
+            return None
+        return actions[data['action_type']].from_dict(data['action_data'])
+
+
+@dataclass
+class ActionChangePokemon(Action):
+    pokemon_nickname: str
+
+    def to_dict(self):
+        return {
+            'action_type': 'change_pokemon',
+            'action_data': {'pokemon_nickname': self.pokemon_nickname}
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(pokemon_nickname=data['pokemon_nickname'])
+
+
+@dataclass
+class ActionUseMove(Action):
+    pokemon_nickname: str
+    move: str
+
+    def to_dict(self):
+        return {
+            'action_type': 'use_move',
+            'action_data': {'pokemon_nickname': self.pokemon_nickname, 'move': self.move}
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(pokemon_nickname=data['pokemon_nickname'], move=data['move'])
+
+
+actions = {
+    'change_pokemon': ActionChangePokemon,
+    'use_move': ActionUseMove,
+}
+
 
 @dataclass
 class Battle:
     ref: str
     host_pokemons: List[BattlingPokemon]
     opponent_pokemons: List[BattlingPokemon] = field(default_factory=list)
+    host_action: Action = None
+    opponent_action: Action = None
 
     events: list = field(default_factory=list, repr=False, compare=False)
     user_events: list = field(default_factory=list, repr=False, compare=False)
@@ -209,6 +246,8 @@ class Battle:
             'ref': self.ref,
             'host_pokemons': [pokemon.to_dict() for pokemon in self.host_pokemons],
             'opponent_pokemons': [pokemon.to_dict() for pokemon in self.opponent_pokemons],
+            'host_action': self.host_action.to_dict() if self.host_action else None,
+            'opponent_action': self.opponent_action.to_dict() if self.opponent_action else None,
         }
 
     @classmethod
@@ -221,6 +260,8 @@ class Battle:
             opponent_pokemons=[
                 BattlingPokemon.from_dict(pokemon) for pokemon in data.get('opponent_pokemons', [])
             ],
+            host_action=Action.from_dict(data.get('host_action')),
+            opponent_action=Action.from_dict(data.get('opponent_action')),
         )
 
     @classmethod
@@ -250,19 +291,57 @@ class Battle:
     def active_opponent_pokemon(self):
         return next(pokemon for pokemon in self.opponent_pokemons if pokemon.is_active)
 
-    def register_host_move(self, move: Move):
-        self.active_host_pokemon.next_move = move
-        if self.active_opponent_pokemon.next_move:
+    def register_use_move(self, player: str, move_name: str):
+        if player == 'host':
+            self.host_action = ActionUseMove(self.active_host_pokemon.pokemon.nickname, move_name)
+        if player == 'opponent':
+            self.opponent_action = ActionUseMove(self.active_opponent_pokemon.pokemon.nickname, move_name)
+
+        if self.host_action and self.opponent_action:
             self.events.append(events.TurnReady(self.ref))
 
-    def register_opponent_move(self, move: Move):
-        self.active_opponent_pokemon.next_move = move
-        if self.active_host_pokemon.next_move:
+    def register_change_pokemon(self, player: str, pokemon_nickname: str):
+        if player == 'host':
+            self.host_action = ActionChangePokemon(pokemon_nickname)
+        if player == 'opponent':
+            self.opponent_action = ActionChangePokemon(pokemon_nickname)
+
+        if self.host_action and self.opponent_action:
             self.events.append(events.TurnReady(self.ref))
+
+    def change_pokemon(self, player: str, pokemon_nickname: str):
+        if player == 'host':
+            pokemons = self.host_pokemons
+        if player == 'opponent':
+            pokemons = self.opponent_pokemons
+        [pokemon.set_active(False) for pokemon in pokemons]
+        [pokemon.set_active(True) for pokemon in pokemons]
+        self.user_events.append(user_events.PokemonChanged(self.ref, player, pokemon_nickname))
 
     def process_turn(self):
-        self.events.append(events.HostMovePerformed(self.ref))
-        self.events.append(events.OpponentMovePerformed(self.ref))
+        if isinstance(self.host_action, ActionUseMove):
+            self.events.append(events.MovePerformed(
+                self.ref,
+                'host',
+                self.active_host_pokemon.pokemon.nickname,
+                self.host_action.move,
+            ))
+        if isinstance(self.host_action, ActionChangePokemon):
+            self.events.append(events.PokemonChanged(self.ref, 'host', self.host_action.pokemon_nickname))
+
+        if isinstance(self.opponent_action, ActionUseMove):
+            self.events.append(events.MovePerformed(
+                self.ref,
+                'opponent',
+                self.active_opponent_pokemon.pokemon.nickname,
+                self.opponent_action.move,
+            ))
+        if isinstance(self.host_action, ActionChangePokemon):
+            self.events.append(events.PokemonChanged(self.ref, 'opponent', self.host_action.pokemon_nickname))
+
+        self.host_action = None
+        self.opponent_action = None
+
         self.events.append(events.TurnFinished(self.ref))
 
     def finish_turn(self):
@@ -279,27 +358,29 @@ class Battle:
         else:
             self.user_events.append(user_events.TurnReady(self.ref))
 
-    def perform_move(self, pokemon: Pokemon, opponent: Pokemon):
+    def _perform_move(self, pokemon: Pokemon, move: Move, opponent: Pokemon):
         if pokemon.is_active:
-            damage = pokemon.perform_move_against(opponent)
+            damage = pokemon.perform_move_against(move, opponent)
 
             user_event = user_events.PokemonUsedMove(
                 self.ref,
                 pokemon.pokemon.species.name,
-                pokemon.next_move.name,
+                move.name,
                 damage,
             )
             self.user_events.append(user_event)
 
         pokemon.next_move = None
 
-    def perform_host_move(self):
-        pokemon_that_moved = next(pokemon for pokemon in self.host_pokemons if pokemon.next_move)
-        self.perform_move(pokemon_that_moved, self.active_opponent_pokemon)
-
-    def perform_opponent_move(self):
-        pokemon_that_moved = next(pokemon for pokemon in self.opponent_pokemons if pokemon.next_move)
-        self.perform_move(pokemon_that_moved, self.active_host_pokemon)
+    def perform_move(self, player: str, pokemon_nickname: str, move_name):
+        if player == 'host':
+            pokemon_that_moved = self.active_host_pokemon
+            pokemon_that_receive_move = self.active_opponent_pokemon
+        if player == 'opponent':
+            pokemon_that_moved = self.active_opponent_pokemon
+            pokemon_that_receive_move = self.active_host_pokemon
+        move = known_moves[move_name]
+        self._perform_move(pokemon_that_moved, move, pokemon_that_receive_move)
 
     def get_host_possible_moves(self):
         return [move.name for move in self.active_host_pokemon.pokemon.moves]

@@ -39,8 +39,8 @@ def handle_command(command, uow):
 
 
 EVENT_HANDLERS = {
-    events.HostMovePerformed: [handlers.host_move_performed],
-    events.OpponentMovePerformed: [handlers.opponent_move_performed],
+    events.MovePerformed: [handlers.move_performed],
+    events.PokemonChanged: [handlers.pokemon_changed],
     events.TurnReady: [handlers.turn_ready],
     events.TurnFinished: [handlers.turn_finished],
 }
@@ -51,6 +51,6 @@ COMMAND_HANDLERS = {
     commands.AddTeam: handlers.add_team,
     commands.HostBattle: handlers.host_battle,
     commands.JoinBattle: handlers.join_battle,
-    commands.RegisterHostMove: handlers.register_host_move,
-    commands.RegisterOpponentMove: handlers.register_opponent_move,
+    commands.RegisterUseMove: handlers.register_use_move,
+    commands.RegisterChangePokemon: handlers.register_change_pokemon,
 }

@@ -102,8 +102,8 @@ def test_a_battle_turn_is_successfully_complete():
 
     battle_ref = create_a_battle(uow)
 
-    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
-    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'host', 'Thunder Shock'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'opponent', 'Bubble'), uow)
 
     battle = uow.battles.get(battle_ref)
 
@@ -122,11 +122,11 @@ def test_opponent_can_choose_first_next_turn_move():
 
     battle_ref = create_a_battle(uow)
 
-    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Bubble'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'opponent', 'Bubble'), uow)
 
     assert user_events.TurnReady(battle_ref) not in uow.user_messagebus.events
 
-    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Thunder Shock'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'host', 'Thunder Shock'), uow)
 
     assert user_events.TurnReady(battle_ref) in uow.user_messagebus.events
 
@@ -150,8 +150,37 @@ def test_a_battle_finishes():
 
     messagebus.handle(commands.JoinBattle(battle_ref, 'Opponent team'), uow)
 
-    messagebus.handle(commands.RegisterHostMove(battle_ref, 'Flamethrower'), uow)
-    messagebus.handle(commands.RegisterOpponentMove(battle_ref, 'Tackle'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'host', 'Flamethrower'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'opponent', 'Tackle'), uow)
 
     assert user_events.PokemonFainted(battle_ref, 'Caterpie') in uow.user_messagebus.events
     assert user_events.BattleFinished(battle_ref, 'host') in uow.user_messagebus.events
+
+
+def test_can_change_active_pokemon():
+    uow = FakeUnitOfWork()
+
+    messagebus.handle(commands.AddTeam('Host team'), uow)
+    messagebus.handle(commands.AddTeam('Opponent team'), uow)
+
+    messagebus.handle(
+        commands.AddPokemonToTeam('Host team', 'Spark', 'Pikachu', lvl=20, move_names=['Flamethrower']),
+        uow=uow
+    )
+    messagebus.handle(
+        commands.AddPokemonToTeam('Host team', 'Flame', 'Ninetales', lvl=20, move_names=['Flamethrower']),
+        uow=uow
+    )
+    messagebus.handle(
+        commands.AddPokemonToTeam('Opponent team', 'Bubble', 'Squirtle', lvl=20, move_names=['Bubble']),
+        uow=uow
+    )
+
+    battle_ref = messagebus.handle(commands.HostBattle('Host team'), uow)
+
+    messagebus.handle(commands.JoinBattle(battle_ref, 'Opponent team'), uow)
+
+    messagebus.handle(commands.RegisterChangePokemon(battle_ref, 'host', 'Flame'), uow)
+    messagebus.handle(commands.RegisterUseMove(battle_ref, 'opponent', 'Tackle'), uow)
+
+    assert user_events.PokemonChanged(battle_ref, 'host', 'Flame') in uow.user_messagebus.events
