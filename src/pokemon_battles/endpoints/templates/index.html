@@ -28,6 +28,12 @@
         <input type="submit" value="Confirm move">
       </form>
 
+      <form id="register_a_pokemon_change" method="POST" action='#'>
+        <select name="pokemon">
+        </select>
+        <input type="submit" value="Send Pokemon">
+      </form>
+
       <div id="battle_events"></div>
     </div>
 
@@ -39,6 +45,9 @@
         var socket = io('ws://127.0.0.1:5000/')
         socket.on('move', function(msg) {
           show_event(`${msg.pokemon} used ${msg.move}`)
+        })
+        socket.on('pokemon_changed', function(msg) {
+          show_event(`${msg.player} sent out ${msg.pokemon_nickname}`)
         })
         socket.on('battle_ready', function(msg) {
           show_battle(msg.battle_ref)
@@ -137,6 +146,22 @@
           .then(res => res.json())
           .then(data => {
             $('#register_a_move').hide()
+            $('#register_a_pokemon_change').hide()
+          })
+        }
+
+        function register_a_pokemon_change (battle_ref, pokemon_nickname) {
+          fetch(`${api_url}/register_a_pokemon_change`, {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({battle_ref, pokemon_nickname, player: window.player})
+          })
+          .then(res => res.json())
+          .then(data => {
+            $('#register_a_move').hide()
+            $('#register_a_pokemon_change').hide()
           })
         }
 
@@ -152,12 +177,20 @@
         }
 
         function show_moves () {
-          fetch(`${api_url}/battle/${window.battle_ref}/moves?player=${window.player}`)
+          $('#register_a_move').hide()
+          $('select[name="move"]').html('')
+          $('#register_a_pokemon_change').hide()
+          $('select[name="pokemon"]').html('')
+          fetch(`${api_url}/battle/${window.battle_ref}/actions?player=${window.player}`)
           .then(res => res.json())
           .then(data => {
             data.moves.forEach((move) => {
               $('select[name="move"]').append(`<option value="${move}">${move}</option>`)
               $('#register_a_move').show()
+            })
+            data.pokemons.forEach((pokemon) => {
+              $('select[name="pokemon"]').append(`<option value="${pokemon}">${pokemon}</option>`)
+              $('#register_a_pokemon_change').show()
             })
           })
         }
@@ -171,6 +204,14 @@
           register_a_move(
             battle_ref,
             $('#register_a_move select[name="move"]').val()
+          )
+          return false
+        })
+
+        $('form#register_a_pokemon_change').submit(() => {
+          register_a_pokemon_change(
+            battle_ref,
+            $('#register_a_pokemon_change select[name="pokemon"]').val()
           )
           return false
         })

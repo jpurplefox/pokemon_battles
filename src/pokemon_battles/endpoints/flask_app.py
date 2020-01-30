@@ -68,18 +68,16 @@ def get_battle(ref):
     return jsonify(battle.to_dict()), 200
 
 
-@app.route('/battle/<ref>/moves', methods=['GET'])
-def get_moves(ref):
+@app.route('/battle/<ref>/actions', methods=['GET'])
+def get_actions(ref):
     uow = unit_of_work.UnitOfWork()
     player = request.args.get('player')
     with uow:
         battle = uow.battles.get(ref)
 
-    if player == 'host':
-        moves = battle.get_host_possible_moves()
-    if player == 'opponent':
-        moves = battle.get_opponent_possible_moves()
-    return jsonify({'moves': moves}), 200
+    moves = battle.get_possible_moves(player)
+    pokemons = battle.get_inactive_pokemons(player)
+    return jsonify({'moves': moves, 'pokemons': pokemons}), 200
 
 
 @app.route('/register_a_move', methods=['POST'])
@@ -88,6 +86,18 @@ def register_a_move():
         request.json['battle_ref'],
         request.json['player'],
         request.json['move_name'],
+    )
+    uow = unit_of_work.UnitOfWork()
+    battle_ref = messagebus.handle(cmd, uow)
+    return jsonify({'status': 'OK'}), 200
+
+
+@app.route('/register_a_pokemon_change', methods=['POST'])
+def register_a_pokemon_change():
+    cmd = commands.RegisterChangePokemon(
+        request.json['battle_ref'],
+        request.json['player'],
+        request.json['pokemon_nickname'],
     )
     uow = unit_of_work.UnitOfWork()
     battle_ref = messagebus.handle(cmd, uow)

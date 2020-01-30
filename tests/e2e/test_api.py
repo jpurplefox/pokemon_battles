@@ -49,9 +49,9 @@ def get_battle(battle_ref):
     return r.json()
 
 
-def get_moves(battle_ref, player):
+def get_actions(battle_ref, player):
     url = config.get_api_url()
-    r = requests.get(f'{url}/battle/{battle_ref}/moves', {'player': player})
+    r = requests.get(f'{url}/battle/{battle_ref}/actions', {'player': player})
     assert r.status_code == 200
 
     return r.json()
@@ -73,6 +73,15 @@ def post_to_register_a_move(battle_ref, player, move_name):
         json={'battle_ref': battle_ref, 'player': player, 'move_name': move_name}
     )
     assert r.status_code == 200
+
+
+def post_to_register_a_pokemon_change(battle_ref, player, pokemon_nickname):
+    url = config.get_api_url()
+    r = requests.post(
+        f'{url}/register_a_pokemon_change',
+        json={'battle_ref': battle_ref, 'player': player, 'pokemon_nickname': pokemon_nickname}
+    )
+    assert r.status_code == 200
     
 
 def test_team_creation_happy_path():
@@ -89,14 +98,15 @@ def test_battle_happy_path():
 
     post_to_add_team(opponent_team_name)
     post_to_add_pokemon_to_team(opponent_team_name, 'Bubble', 'Squirtle', 20, ['Bubble'])
+    post_to_add_pokemon_to_team(opponent_team_name, 'Buggy', 'Caterpie', 20, ['Tackle'])
 
     battle_ref = post_to_host_a_battle(host_team_name)
     post_to_join_a_battle(battle_ref, opponent_team_name)
 
     battle_data = get_battle(battle_ref)
     assert battle_data is not None
-    assert get_moves(battle_ref, 'host') == {'moves': ['Thunder Shock']}
-    assert get_moves(battle_ref, 'opponent') == {'moves': ['Bubble']}
+    assert get_actions(battle_ref, 'host') == {'moves': ['Thunder Shock'], 'pokemons': []}
+    assert get_actions(battle_ref, 'opponent') == {'moves': ['Bubble'], 'pokemons': ['Buggy']}
 
     post_to_register_a_move(battle_ref, 'host', 'Thunder Shock')
-    post_to_register_a_move(battle_ref, 'opponent', 'Bubble')
+    post_to_register_a_pokemon_change(battle_ref, 'opponent', 'Buggy')

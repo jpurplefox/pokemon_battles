@@ -21,7 +21,7 @@ def handle(message: Message, uow):
 def handle_event(event: events.Event, uow):
     for handler in EVENT_HANDLERS[type(event)]:
         try:
-            logger.debug('handling event %s with handler %s', event, handler)
+            logger.info('handling event %s with handler %s', event, handler)
             handler(event, uow=uow)
         except:
             logger.exception('Exception handling event %s', event)

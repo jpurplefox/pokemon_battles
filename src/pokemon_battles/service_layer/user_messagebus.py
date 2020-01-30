@@ -27,6 +27,9 @@ class FlaskSocketIOUserMessagebus(AbstractUserMessagebus):
         if isinstance(event, user_events.PokemonUsedMove):
             event_name = 'move'
             data = {'pokemon': event.pokemon, 'move': event.move}
+        if isinstance(event, user_events.PokemonChanged):
+            event_name = 'pokemon_changed'
+            data = {'player': event.player, 'pokemon_nickname': event.pokemon_nickname}
         if isinstance(event, user_events.TurnReady):
             event_name = 'turn_ready'
             data = {'battle_ref': event.battle_ref}
